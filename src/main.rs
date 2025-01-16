@@ -58,24 +58,39 @@ impl CPU {
 
         memory.reset();
     }
+    pub fn lda_set_status(&mut self) {
+        self.Z = (self.A == 0) as u8;
+        self.N = ((self.A & 0b10000000) > 0) as u8;
+    }
     pub fn fetch(&mut self, memory: &Memory) -> u8 {
         let data = memory.data[self.program_counter as usize];
+        self.program_counter += 1;
+        data
+    }
+    pub fn read_byte(&mut self, byte: u8, memory: &Memory) -> u8 {
+        let data = memory.data[byte as usize];
         self.program_counter += 1;
         data
     }
 
     pub fn exec(&mut self, mut ticks: u32, memory: &Memory) {
         while ticks > 0 {
-            let ins = self.fetch(memory);
+            let ins = self.fetch(memory); // 1 cycle
             ticks -= 1;
             match ins {
                 CPU::INS_LDA_IM => {
-                    let value = self.fetch(memory);
+                    let value = self.fetch(memory); // 1 cycle
                     ticks -= 1;
                     self.A = value;
-                    self.Z = (self.A == 0) as u8;
-                    self.N = ((self.A & 0b10000000) > 0) as u8;
+                    self.lda_set_status();
                     println!("{:#?}", self);
+                }
+                CPU::INS_LDA_ZP => {
+                    let zero_page_addr = self.fetch(memory); // 1 cycle
+                    ticks -= 1;
+                    self.A = self.read_byte(zero_page_addr, memory);
+                    ticks -= 1;
+                    self.lda_set_status();
                 }
                 _ => {
                     println!("Miss!");
@@ -85,6 +100,7 @@ impl CPU {
         }
     }
     const INS_LDA_IM: u8 = 0xA9;
+    const INS_LDA_ZP: u8 = 0xA5;
 }
 
 fn main() {
