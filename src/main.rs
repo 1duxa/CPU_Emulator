@@ -91,6 +91,7 @@ impl CPU {
                     self.A = self.read_byte(zero_page_addr, memory);
                     ticks -= 1;
                     self.lda_set_status();
+                    println!("{:#?}", self);
                 }
                 _ => {
                     println!("Miss!");
@@ -107,7 +108,22 @@ fn main() {
     let mut memory = Memory::new();
     let mut cpu: CPU = CPU::new();
     cpu.reset(&mut memory);
-    memory.data[0xFFFC] = CPU::INS_LDA_IM; // Opcode for LDA #immediate
-    memory.data[0xFFFD] = 0x42; // Immediate value (42 in decimal)
-    cpu.exec(2, &memory); // We start with 2 ticks, one for opcode, one for operand
+    memory.data[0xFFFC] = CPU::INS_LDA_ZP;
+    memory.data[0xFFFD] = 0x42;
+    memory.data[0x0042] = 0x84;
+    cpu.exec(3, &memory);
+}
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    pub fn test_ins_lda_zp() {
+        let mut memory = Memory::new();
+        let mut cpu: CPU = CPU::new();
+        cpu.reset(&mut memory);
+        memory.data[0xFFFC] = CPU::INS_LDA_ZP;
+        memory.data[0xFFFD] = 0x42;
+        memory.data[0x0042] = 0x84;
+        cpu.exec(3, &memory);
+    }
 }
